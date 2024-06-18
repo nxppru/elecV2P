@@ -1,6 +1,6 @@
 const cheerio = require('cheerio')
 
-const { CONFIG } = require('../config')
+const { CONFIG, CONFIG_Port } = require('../config')
 const { errStack, euid, sType, sString, sJson, bEmpty, feedPush, iftttPush, barkPush, custPush, store, eAxios, jsfile, file, downloadfile, wsSer, sseSer, message } = require('../utils')
 
 const { exec } = require('../func/exec')
@@ -78,9 +78,9 @@ class contextBase {
   clearTimeout = clearTimeout
   clearInterval = clearInterval
 
-  __version = CONFIG.version
-  __vernum  = CONFIG.vernum
-  __userid  = CONFIG.userid
+  __version = CONFIG_Port.version
+  __vernum  = CONFIG_Port.vernum
+  __userid  = CONFIG_Port.userid
   __home = CONFIG.homepage
   __efss = file.get(CONFIG.efss.directory, 'path')
   $ws = {
@@ -127,7 +127,16 @@ class contextBase {
       // 白名单之外才显示 url
       this.console.log(request.method || 'GET', request.url)
     }
-    return eAxios(request, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null).catch(error=>{
+    return eAxios(request, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null).then(res=>{
+      return {
+        status: res.status,
+        statusCode: res.status,
+        statusText: res.statusText,
+        headers: res.headers,
+        data: res.data,
+        body: res.data,
+      }
+    }).catch(error=>{
       let err = new Error(`$axios ${request.method || 'GET'} ${request.url} Error: ${error.message || error}`);
       if (error.response) {
         let { request, config, ...res } = error.response;
@@ -365,6 +374,7 @@ class quanxContext {
       return new Promise((resolve, reject) => {
         eAxios(req, (CONFIG.CONFIG_RUNJS.proxy === false) ? false : null).then(response=>{
           resp = {
+            status: response.status,
             statusCode: response.status,
             headers: response.headers,
             body: sString(response.data)
@@ -408,10 +418,8 @@ class context {
 
   add({ surge, quanx, addContext }){
     if (surge) {
-      this.final.console.debug('启用 surge 兼容模式')
       Object.assign(this.final, new surgeContext({ fconsole: this.final.console, name: this.final.__name }))
     } else if (quanx) {
-      this.final.console.debug('启用 quanx 兼容模式')
       Object.assign(this.final, new quanxContext({ fconsole: this.final.console, name: this.final.__name }))
     }
     if (addContext) {
